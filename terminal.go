@@ -21,6 +21,8 @@ type Terminal struct {
 	sleeping  int32
 
 	sizeChan chan string
+
+	PipeWrite func(r rune) (int, error)
 }
 
 func NewTerminal(cfg *Config) (*Terminal, error) {
@@ -147,6 +149,12 @@ func (t *Terminal) ioloop() {
 				continue
 			}
 			break
+		}
+
+		if t.PipeWrite != nil {
+			t.PipeWrite(r)
+			expectNextChar = true
+			continue
 		}
 
 		if isEscape {

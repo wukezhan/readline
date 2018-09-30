@@ -500,6 +500,10 @@ func (o *Operation) Refresh() {
 	}
 }
 
+func (o *Operation) ForceRefresh() {
+	o.buf.Refresh(nil)
+}
+
 func (o *Operation) Clean() {
 	o.buf.Clean()
 }

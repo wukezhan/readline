@@ -35,7 +35,7 @@ type RuneBuffer struct {
 	sync.Mutex
 }
 
-func (r* RuneBuffer) pushKill(text []rune) {
+func (r *RuneBuffer) pushKill(text []rune) {
 	r.lastKill = append([]rune{}, text...)
 }
 
@@ -221,7 +221,7 @@ func (r *RuneBuffer) DeleteWord() {
 	}
 	for i := init + 1; i < len(r.buf); i++ {
 		if !IsWordBreak(r.buf[i]) && IsWordBreak(r.buf[i-1]) {
-			r.pushKill(r.buf[r.idx:i-1])
+			r.pushKill(r.buf[r.idx : i-1])
 			r.Refresh(func() {
 				r.buf = append(r.buf[:r.idx], r.buf[i-1:]...)
 			})
@@ -350,7 +350,7 @@ func (r *RuneBuffer) Yank() {
 		return
 	}
 	r.Refresh(func() {
-		buf := make([]rune, 0, len(r.buf) + len(r.lastKill))
+		buf := make([]rune, 0, len(r.buf)+len(r.lastKill))
 		buf = append(buf, r.buf[:r.idx]...)
 		buf = append(buf, r.lastKill...)
 		buf = append(buf, r.buf[r.idx:]...)
@@ -458,11 +458,13 @@ func (r *RuneBuffer) Refresh(f func()) {
 		return
 	}
 
+	r.hideCursor()
 	r.clean()
 	if f != nil {
 		f()
 	}
 	r.print()
+	r.showCursor()
 }
 
 func (r *RuneBuffer) SetOffset(offset string) {
@@ -482,7 +484,9 @@ func (r *RuneBuffer) output() []byte {
 	if r.cfg.EnableMask && len(r.buf) > 0 {
 		buf.Write([]byte(strings.Repeat(string(r.cfg.MaskRune), len(r.buf)-1)))
 		if r.buf[len(r.buf)-1] == '\n' {
-			buf.Write([]byte{'\n'})
+			//buf.Write([]byte{'\n'})
+			// by wukezhan: add support for web terminal
+			buf.Write([]byte{'\r', '\n'})
 		} else {
 			buf.Write([]byte(string(r.cfg.MaskRune)))
 		}
@@ -526,9 +530,14 @@ func (r *RuneBuffer) getBackspaceSequence() []byte {
 		sep[i] = true
 	}
 	var buf []byte
-	for i := len(r.buf); i > r.idx; i-- {
+	for i = len(r.buf); i > r.idx; i-- {
 		// move input to the left of one
 		buf = append(buf, '\b')
+		if i > 0 && runes.Width(r.buf[i-1]) == 2 {
+			// if the next char width is 2
+			// then move input to the right of it
+			buf = append(buf, '\b')
+		}
 		if sep[i] {
 			// up one line, go to the start of the line and move cursor right to the end (r.width)
 			buf = append(buf, "\033[A\r"+"\033["+strconv.Itoa(r.width)+"C"...)
@@ -586,6 +595,18 @@ func (r *RuneBuffer) SetPrompt(prompt string) {
 	r.Lock()
 	r.prompt = []rune(prompt)
 	r.Unlock()
+}
+
+func (r *RuneBuffer) hideCursor() {
+	buf := bufio.NewWriter(r.w)
+	buf.Write([]byte("\033[?25l")) // hide cursor
+	buf.Flush()
+}
+
+func (r *RuneBuffer) showCursor() {
+	buf := bufio.NewWriter(r.w)
+	buf.Write([]byte("\033[?12l\033[?25h")) // show cursor
+	buf.Flush()
 }
 
 func (r *RuneBuffer) cleanOutput(w io.Writer, idxLine int) {

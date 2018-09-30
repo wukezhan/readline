@@ -17,7 +17,9 @@
 //
 package readline
 
-import "io"
+import (
+	"io"
+)
 
 type Instance struct {
 	Config    *Config

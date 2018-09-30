@@ -209,7 +209,8 @@ func (o *opCompleter) CompleteRefresh() {
 
 	o.candidateColNum = colNum
 	buf := bufio.NewWriter(o.w)
-	buf.Write(bytes.Repeat([]byte("\n"), lineCnt))
+	// by wukezhan
+	buf.Write(bytes.Repeat([]byte(CRLF), lineCnt))
 
 	colIdx := 0
 	lines := 1
@@ -229,7 +230,7 @@ func (o *opCompleter) CompleteRefresh() {
 
 		colIdx++
 		if colIdx == colNum {
-			buf.WriteString("\n")
+			buf.WriteString(CRLF)
 			lines++
 			colIdx = 0
 		}

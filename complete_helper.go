@@ -39,11 +39,9 @@ func Print(p PrefixCompleterInterface, prefix string, level int, buf *bytes.Buff
 	if strings.TrimSpace(string(p.GetName())) != "" {
 		buf.WriteString(prefix)
 		if level > 0 {
-			buf.WriteString("├")
-			buf.WriteString(strings.Repeat("─", (level*4)-2))
-			buf.WriteString(" ")
+			buf.WriteString(strings.Repeat(" ", (level * 4)))
 		}
-		buf.WriteString(string(p.GetName()) + "\n")
+		buf.WriteString(string(p.GetName()) + CRLF)
 		level++
 	}
 	for _, ch := range p.GetChildren() {

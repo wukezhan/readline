@@ -2,6 +2,7 @@ package readline
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -22,7 +23,7 @@ type Terminal struct {
 
 	sizeChan chan string
 
-	PipeWrite func(r rune) (int, error)
+	PipeWrite func(r *bufio.Reader) ([]byte, error)
 }
 
 func NewTerminal(cfg *Config) (*Terminal, error) {
@@ -131,6 +132,7 @@ func (t *Terminal) ioloop() {
 	)
 
 	buf := bufio.NewReader(t.getStdin())
+	var rs []rune
 	for {
 		if !expectNextChar {
 			atomic.StoreInt32(&t.isReading, 0)
@@ -141,20 +143,30 @@ func (t *Terminal) ioloop() {
 				return
 			}
 		}
+
+		var r rune
+		var err error
+		if t.PipeWrite != nil {
+			p, _ := t.PipeWrite(buf)
+			if len(p) > 0 {
+				rs = bytes.Runes(p)
+			}
+		}
+
+		if len(rs) > 0 {
+			r = rs[0]
+			rs = rs[1:]
+		} else {
+			r, _, err = buf.ReadRune()
+		}
+
 		expectNextChar = false
-		r, _, err := buf.ReadRune()
 		if err != nil {
 			if strings.Contains(err.Error(), "interrupted system call") {
 				expectNextChar = true
 				continue
 			}
 			break
-		}
-
-		if t.PipeWrite != nil {
-			t.PipeWrite(r)
-			expectNextChar = true
-			continue
 		}
 
 		if isEscape {

@@ -484,9 +484,9 @@ func (r *RuneBuffer) output() []byte {
 	if r.cfg.EnableMask && len(r.buf) > 0 {
 		buf.Write([]byte(strings.Repeat(string(r.cfg.MaskRune), len(r.buf)-1)))
 		if r.buf[len(r.buf)-1] == '\n' {
-			//buf.Write([]byte{'\n'})
+			buf.Write([]byte{'\n'})
 			// by wukezhan: add support for web terminal
-			buf.Write([]byte{'\r', '\n'})
+			//buf.Write([]byte{'\r', '\n'})
 		} else {
 			buf.Write([]byte(string(r.cfg.MaskRune)))
 		}
